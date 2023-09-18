@@ -676,7 +676,9 @@ CompleteBuildingBlock在内部调用了ConfirmPayload方法
 	}
 
 在这里可以参考这张oplabs给出来的插图
+
 ![ENGINE](../resources/engine.svg)
+
 这张导图主要是描述了create blocks的过程，
 
 #### Rollup 驱动程序实际上并不真正创建区块。相反，它通过 Engine API 指导执行引擎这样做。在上述每次块派生循环的迭代中，rollup 驱动程序将制作一个 payload 属性对象并将其发送到执行引擎。然后执行引擎将 payload 属性对象转换为一个区块，并将其添加到链中。Rollup 驱动程序的基本序列如下：
