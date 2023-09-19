@@ -262,7 +262,7 @@ for {
 在下面的函数中，我们可以看到传入的 epoch 参数是 `l1Origin.ID()`。这符合我们对 epoch 编号的定义。函数负责准备创建新 L2 块的所有必要属性。
 
 ```
-	attrs.NoTxPool = uint64(attrs.Timestamp) > l1Origin.Time+d.config.MaxSequencerDrift
+	attrs, err := d.attrBuilder.PreparePayloadAttributes(fetchCtx, l2Head, l1Origin.ID())
 ```
 
 	func (ba *FetchingAttributesBuilder) PreparePayloadAttributes(ctx context.Context, l2Parent eth.L2BlockRef, epoch eth.BlockID) (attrs *eth.PayloadAttributes, err error) {
