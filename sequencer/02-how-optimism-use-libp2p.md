@@ -484,11 +484,11 @@ gossip在分布式系统中用于确保数据一致性，并修复由多播引�
     }
 ```
 
-    接下来我们看看，当peer收到这个request的时候会怎么处理。
+接下来我们看看，当peer收到这个request的时候会怎么处理。
 
-    首先我们要知道的是，peer和请求节点之间的链接，或者消息传递是通过libp2p的stream来传递的。stream的处理方法由接收peer节点实现，stream的创建由发送节点来开启。
+首先我们要知道的是，peer和请求节点之间的链接，或者消息传递是通过libp2p的stream来传递的。stream的处理方法由接收peer节点实现，stream的创建由发送节点来开启。
 
-    我们可以在之前的init函数中看到这样的代码，这里MakeStreamHandler返回了一个处理函数，SetStreamHandler将协议id和这个处理函数绑定，因此，每当发送节点创建并使用这个stream的时候，都会触发返回的处理函数。
+我们可以在之前的init函数中看到这样的代码，这里MakeStreamHandler返回了一个处理函数，SetStreamHandler将协议id和这个处理函数绑定，因此，每当发送节点创建并使用这个stream的时候，都会触发返回的处理函数。
     
 ```go
     n.syncSrv = NewReqRespServer(rollupCfg, l2Chain, metrics)
@@ -497,8 +497,8 @@ gossip在分布式系统中用于确保数据一致性，并修复由多播引�
     n.host.SetStreamHandler(PayloadByNumberProtocolID(rollupCfg.L2ChainID), payloadByNumber)
 ```
 
-    接下来让我们看看处理函数里面是如何处理的
-    函数首先进行全局和个人的速率限制检查，以控制处理请求的速度。然后，它读取并验证了请求的区块号，确保它在合理的范围内。之后，函数从 L2 层获取请求的区块负载，并将其写入到响应流中。在写入响应数据时，它设置了写入截止时间，以避免在写入过程中被慢速的 peer 连接阻塞。最终，函数返回请求的区块号和可能的错误。
+接下来让我们看看处理函数里面是如何处理的
+函数首先进行全局和个人的速率限制检查，以控制处理请求的速度。然后，它读取并验证了请求的区块号，确保它在合理的范围内。之后，函数从 L2 层获取请求的区块负载，并将其写入到响应流中。在写入响应数据时，它设置了写入截止时间，以避免在写入过程中被慢速的 peer 连接阻塞。最终，函数返回请求的区块号和可能的错误。
 
 ```go
     func (srv *ReqRespServer) handleSyncRequest(ctx context.Context, stream network.Stream) (uint64, error) {
@@ -584,13 +584,13 @@ gossip在分布式系统中用于确保数据一致性，并修复由多播引�
     }
 ```
 
-    至此，反向链同步请求和处理的大致流程已经讲解完毕
+至此，反向链同步请求和处理的大致流程已经讲解完毕
 
-    #### p2p节点中的积分声誉系统
+#### p2p节点中的积分声誉系统
 
-    为了防止某些节点进行恶意的请求与响应来破坏整个网络的安全性，optimism还使用了一套积分系统。
+为了防止某些节点进行恶意的请求与响应来破坏整个网络的安全性，optimism还使用了一套积分系统。
 
-    例如在`op-node/p2p/app_scores.go` 中存在一系列函数对peer的分数进行设置
+例如在`op-node/p2p/app_scores.go` 中存在一系列函数对peer的分数进行设置
 
 ```go
     func (s *peerApplicationScorer) onValidResponse(id peer.ID) {
@@ -618,7 +618,7 @@ gossip在分布式系统中用于确保数据一致性，并修复由多播引�
     }
 ```
 
-    然后在添加新的节点前会检查其积分情况
+然后在添加新的节点前会检查其积分情况
 
 ```go
     func AddScoring(gater BlockingConnectionGater, scores Scores, minScore float64) *ScoringConnectionGater {
@@ -646,5 +646,5 @@ gossip在分布式系统中用于确保数据一致性，并修复由多播引�
     }
 ```
 
-    ### 总结
-    libp2p的高度可配置性使得整个项目的p2p具有高度的可自定义化和模块话，以上是optimsim对libp2p进行个性化实现的主要逻辑，还有其他细节可以在p2p目录下通过阅读源码的方式来详细学习。
+### 总结
+libp2p的高度可配置性使得整个项目的p2p具有高度的可自定义化和模块话，以上是optimsim对libp2p进行个性化实现的主要逻辑，还有其他细节可以在p2p目录下通过阅读源码的方式来详细学习。
