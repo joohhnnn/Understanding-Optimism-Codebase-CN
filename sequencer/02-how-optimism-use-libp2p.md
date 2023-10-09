@@ -162,7 +162,7 @@ host可以理解为是p2p的节点，当开启这个节点的时候，需要针�
 这些关键部分负责 libp2p 主机的初始化和设置，每个部分都负责主机配置的一个特定方面。
 
 
-    ```go
+```go
     func (conf *Config) Host(log log.Logger, reporter metrics.Reporter, metrics HostMetrics) (host.Host, error) {
         if conf.DisableP2P {
             return nil, nil
@@ -284,7 +284,7 @@ host可以理解为是p2p的节点，当开启这个节点的时候，需要针�
         out.gater = connGtr
         return out, nil
     }
-    ```
+```
 
 #### gossip下的区块传播
 
@@ -293,7 +293,7 @@ gossip在分布式系统中用于确保数据一致性，并修复由多播引�
 首先让我们来看看节点是在哪里加入gossip网络的，
 `op-node/p2p/node.go`中的`init`方法，在节点初始化的时候，调用JoinGossip方法加入了gossip网络
 
-    ```go
+```go
     func (n *NodeP2P) init(resourcesCtx context.Context, rollupCfg *rollup.Config, log log.Logger, setup SetupP2P, gossipIn GossipIn, l2Chain L2Chain, runCfg GossipRuntimeConfig, metrics metrics.Metricer) error {
             …
             // note: the IDDelta functionality was removed from libP2P, and no longer needs to be explicitly disabled.
@@ -304,7 +304,7 @@ gossip在分布式系统中用于确保数据一致性，并修复由多播引�
             n.gsOut, err = JoinGossip(resourcesCtx, n.host.ID(), n.gs, log, rollupCfg, runCfg, gossipIn)
             …
     }
-    ```
+```
 
 接下来来到`op-node/p2p/gossip.go`中
 
@@ -337,7 +337,7 @@ gossip在分布式系统中用于确保数据一致性，并修复由多播引�
 9. **创建并返回发布者**：
    - 创建了一个 `publisher` 实例并返回，该实例配置为使用提供的配置和区块主题。
 
-    ```go
+```go
     func JoinGossip(p2pCtx context.Context, self peer.ID, ps *pubsub.PubSub, log log.Logger, cfg *rollup.Config, runCfg GossipRuntimeConfig, gossipIn GossipIn) (GossipOut, error) {
         val := guardGossipValidator(log, logValidationResult(self, "validated block", log, BuildBlocksValidator(log, cfg, runCfg)))
         blocksTopicName := blocksTopicV1(cfg) // return fmt.Sprintf("/optimism/%s/0/blocks", cfg.L2ChainID.String())
@@ -368,7 +368,7 @@ gossip在分布式系统中用于确保数据一致性，并修复由多播引�
 
         return &publisher{log: log, cfg: cfg, blocksTopic: blocksTopic, runCfg: runCfg}, nil
     }
-    ```
+```
 
 这样，一个非sequencer节点的订阅就已经建立了，接下来让我们把目光移到sequencer模式的节点当中，然后看看他是如果将区块广播出去的。
 
@@ -422,7 +422,7 @@ gossip在分布式系统中用于确保数据一致性，并修复由多播引�
 4. 在请求数据时，函数会记录一个调试日志，说明它正在请求哪个范围的数据。
 5. 函数最终返回一个错误值。如果没有错误，它会返回 `nil`
 
-    ```go
+```go
     // checkForGapInUnsafeQueue checks if there is a gap in the unsafe queue and attempts to retrieve the missing payloads from an alt-sync method.
     // WARNING: This is only an outgoing signal, the blocks are not guaranteed to be retrieved.
     // Results are received through OnUnsafeL2Payload.
@@ -439,12 +439,12 @@ gossip在分布式系统中用于确保数据一致性，并修复由多播引�
         }
         return nil
     }
-    ```
+```
 
 `RequestL2Range`函数向`requests`通道里传递请求区块的开始和结束信号。
 
 然后通过`onRangeRequest`方法来对请求向`peerRequests`通道分发，`peerRequests`通道会被多个peer开启的loop所等待，即每一次分发都只有一个peer会去处理这个request。
-    ```go
+```go
     func (s *SyncClient) onRangeRequest(ctx context.Context, req rangeRequest) {
             …
             for i := uint64(0); ; i++ {
@@ -482,7 +482,7 @@ gossip在分布式系统中用于确保数据一致性，并修复由多播引�
             }
         }
     }
-    ```
+```
 
     接下来我们看看，当peer收到这个request的时候会怎么处理。
 
@@ -490,17 +490,17 @@ gossip在分布式系统中用于确保数据一致性，并修复由多播引�
 
     我们可以在之前的init函数中看到这样的代码，这里MakeStreamHandler返回了一个处理函数，SetStreamHandler将协议id和这个处理函数绑定，因此，每当发送节点创建并使用这个stream的时候，都会触发返回的处理函数。
     
-    ```go
+```go
     n.syncSrv = NewReqRespServer(rollupCfg, l2Chain, metrics)
     // register the sync protocol with libp2p host
     payloadByNumber := MakeStreamHandler(resourcesCtx, log.New("serve", "payloads_by_number"), n.syncSrv.HandleSyncRequest)
     n.host.SetStreamHandler(PayloadByNumberProtocolID(rollupCfg.L2ChainID), payloadByNumber)
-    ```
+```
 
     接下来让我们看看处理函数里面是如何处理的
     函数首先进行全局和个人的速率限制检查，以控制处理请求的速度。然后，它读取并验证了请求的区块号，确保它在合理的范围内。之后，函数从 L2 层获取请求的区块负载，并将其写入到响应流中。在写入响应数据时，它设置了写入截止时间，以避免在写入过程中被慢速的 peer 连接阻塞。最终，函数返回请求的区块号和可能的错误。
 
-    ```go
+```go
     func (srv *ReqRespServer) handleSyncRequest(ctx context.Context, stream network.Stream) (uint64, error) {
         peerId := stream.Conn().RemotePeer()
 
@@ -582,7 +582,7 @@ gossip在分布式系统中用于确保数据一致性，并修复由多播引�
         }
         return req, nil
     }
-    ```
+```
 
     至此，反向链同步请求和处理的大致流程已经讲解完毕
 
@@ -592,7 +592,7 @@ gossip在分布式系统中用于确保数据一致性，并修复由多播引�
 
     例如在`op-node/p2p/app_scores.go` 中存在一系列函数对peer的分数进行设置
 
-    ```go
+```go
     func (s *peerApplicationScorer) onValidResponse(id peer.ID) {
         _, err := s.scorebook.SetScore(id, store.IncrementValidResponses{Cap: s.params.ValidResponseCap})
         if err != nil {
@@ -616,11 +616,11 @@ gossip在分布式系统中用于确保数据一致性，并修复由多播引�
             return
         }
     }
-    ```
+```
 
     然后在添加新的节点前会检查其积分情况
 
-    ```go
+```go
     func AddScoring(gater BlockingConnectionGater, scores Scores, minScore float64) *ScoringConnectionGater {
         return &ScoringConnectionGater{BlockingConnectionGater: gater, scores: scores, minScore: minScore}
     }
@@ -644,7 +644,7 @@ gossip在分布式系统中用于确保数据一致性，并修复由多播引�
     func (g *ScoringConnectionGater) InterceptSecured(dir network.Direction, id peer.ID, mas network.ConnMultiaddrs) (allow bool) {
         return g.BlockingConnectionGater.InterceptSecured(dir, id, mas) && g.checkScore(id)
     }
-    ```
+```
 
     ### 总结
     libp2p的高度可配置性使得整个项目的p2p具有高度的可自定义化和模块话，以上是optimsim对libp2p进行个性化实现的主要逻辑，还有其他细节可以在p2p目录下通过阅读源码的方式来详细学习。
