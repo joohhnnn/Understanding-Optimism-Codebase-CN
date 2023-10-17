@@ -34,13 +34,13 @@
 
 这种同步的场景处于：当l2的块新产生的时候，即在上一节我们讨论的sequencer模式下是如何产生新的区块的。
 
-当产生新的区块后，sequencer通过基于libp2p的P2P网络的pub/sub（广播/订阅）模块，向’新unsafe区块‘ topic 发出广播。所有订阅了此topic的节点都会直接或间接的收到这一广播消息。详情可以查看[link](https://github.com/joohhnnn/Understanding-Optimism-Codebase-CN/blob/main/sequencer/02-how-optimism-use-libp2p.md#gossip%E4%B8%8B%E7%9A%84%E5%8C%BA%E5%9D%97%E4%BC%A0%E6%92%AD)
+当产生新的区块后，sequencer通过基于libp2p的P2P网络的pub/sub（广播/订阅）模块，向’新unsafe区块‘ topic 发出广播。所有订阅了此topic的节点都会直接或间接的收到这一广播消息。[详情可以查看](https://github.com/joohhnnn/Understanding-Optimism-Codebase-CN/blob/main/sequencer/02-how-optimism-use-libp2p.md#gossip%E4%B8%8B%E7%9A%84%E5%8C%BA%E5%9D%97%E4%BC%A0%E6%92%AD)
 
 ## op-node 基于libp2p的请求-响应的逆向区块头同步
 
 这种同步的场景处于：当节点因为特殊情况，比如宕机后重新链接，可能会产生一些没有同步上的区块（gaps）
 
-当这种情况出现的时候，可以通过p2p网络的反向链的方式快速同步，即通过使用libp2p原生的stream流来和其他p2p节点建立链接，同时发送同步请求。详情可以查看[link](https://github.com/joohhnnn/Understanding-Optimism-Codebase-CN/blob/main/sequencer/02-how-optimism-use-libp2p.md#%E5%BD%93%E5%AD%98%E5%9C%A8%E7%BC%BA%E5%A4%B1%E5%8C%BA%E5%9D%97%E9%80%9A%E8%BF%87p2p%E5%BF%AB%E9%80%9F%E5%90%8C%E6%AD%A5)
+当这种情况出现的时候，可以通过p2p网络的反向链的方式快速同步，即通过使用libp2p原生的stream流来和其他p2p节点建立链接，同时发送同步请求。[详情可以查看](https://github.com/joohhnnn/Understanding-Optimism-Codebase-CN/blob/main/sequencer/02-how-optimism-use-libp2p.md#%E5%BD%93%E5%AD%98%E5%9C%A8%E7%BC%BA%E5%A4%B1%E5%8C%BA%E5%9D%97%E9%80%9A%E8%BF%87p2p%E5%BF%AB%E9%80%9F%E5%90%8C%E6%AD%A5)
 
 ## 执行层（EL，又名 engine sync）同步
 
