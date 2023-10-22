@@ -1,20 +1,20 @@
 # batcher工作原理
 在这一章节中，我们将探讨到底什么是`batcher` ⚙️
-官方specs中有关派生部分的介绍([source](https://github.com/ethereum-optimism/optimism/blob/develop/specs/batcher.md))
+官方specs中有batcher的介绍([source](https://github.com/ethereum-optimism/optimism/blob/develop/specs/batcher.md))
 
 在进行之前，我们先提出几个问题，通过这两个问题来真正理解`batcher`的作用以及工作原理
 - `batcher`是什么？它为什么叫做`batcher`
-- `batche`r在代码中到底是怎么运行的？
+- `batcher`在代码中到底是怎么运行的？
 
 ## 前置知识
 - 在rollup机制中，要想做到的去中心化特性，例如抗审查等。我们必须要把layer2上发生的数据（transactions）全部发送到layer1当中。这样就可以在利用layer1的安全性的同时，又可以完全从layer1中构建出来整个layer2的数据，使得layer2才真正的具有有效性。
-- [Epochs and the Sequencing Window](https://github.com/ethereum-optimism/optimism/blob/develop/specs/overview.md#epochs-and-the-sequencing-window):`Epoch`可以简单理解为L1新的一个`区块（N+1`）生成的这段时间。`epoch`的编号等于L1`区块N`的编号，在L1区块`N -> N+1` 这段时间内产生的所有L2区块都属于`epoch N`。在上个概念中我们提到必须上传L2的数据到L1中，那么我们应该在什么范围内上传数据才是有效的呢，`Sequencing Window`的size给了我们答案，即区块N/epoch N的相关数据，必须在L1的第`N + size`之前已经上传到L1了。
-- Batch/Batcher Transaction: Batch可以简单理解为每一个L2区块构建所需要的交易；Batcher Transaction为多个batch组合起来经过加工后发送到L1的那笔交易
-- [Channe](https://github.com/ethereum-optimism/optimism/blob/develop/specs/glossary.md#channel): channel可以简单理解为是batch的组合，组合是为了获得更好的压缩率，从而降低数据可用性成本，以使batcher上传的成本进一步降低。
-- [Frame](https://github.com/ethereum-optimism/optimism/blob/develop/specs/glossary.md#channel-frame): frame可以理解为，有时候为了更好的压缩率，可能会导致channel数据过大而不能直接被batcher将整个channel发送给L1，因此需要对channel进行切割，分多次进行发送。
+- [Epochs and the Sequencing Window](https://github.com/ethereum-optimism/optimism/blob/develop/specs/overview.md#epochs-and-the-sequencing-window):`Epoch`可以简单理解为L1新的一个`区块（N+1）`生成的这段时间。`epoch`的编号等于L1`区块N`的编号，在L1区块`N -> N+1` 这段时间内产生的所有L2区块都属于`epoch N`。在上个概念中我们提到必须上传L2的数据到L1中，那么我们应该在什么范围内上传数据才是有效的呢，`Sequencing Window`的size给了我们答案，即区块N/epoch N的相关数据，必须在L1的第`N + size`之前已经上传到L1了。
+- Batch/Batcher Transaction: `Batch`可以简单理解为每一个L2区块构建所需要的交易。`Batcher Transaction`为多个batch组合起来经过加工后发送到L1的那笔交易
+- [Channe](https://github.com/ethereum-optimism/optimism/blob/develop/specs/glossary.md#channel): `channel`可以简单理解为是`batch`的组合，组合是为了获得更好的压缩率，从而降低数据可用性成本，以使`batcher`上传的成本进一步降低。
+- [Frame](https://github.com/ethereum-optimism/optimism/blob/develop/specs/glossary.md#channel-frame): `frame`可以理解为，有时候为了更好的压缩率，可能会导致`channel`数据过大而不能直接被`batcher`将整个`channel`发送给L1，因此需要对`channel`进行切割，分多次进行发送。
 
 ## 什么是batcher
-在rollup中，需要一个角色来传递L2信息到L1当中，同时每当有新的交易就马上发送是昂贵且不方便管理的。这时候我们将需要制定一种合理的批量上传策略。因此，为了解决这个问题，batcher出现了。batcher是唯一存在（sequencer当前掌管私钥），且和特定地址发送`Batcher Transactio`n来传递L2信息的组件。
+在rollup中，需要一个角色来传递L2信息到L1当中，同时每当有新的交易就马上发送是昂贵且不方便管理的。这时候我们将需要制定一种合理的批量上传策略。因此，为了解决这个问题，batcher出现了。batcher是唯一存在（sequencer当前掌管私钥），且和特定地址发送`Batcher Transaction`来传递L2信息的组件。
 
 batcher通过对unsafe区块数据进行收集，来获取多个batch，在这里每个区块都对应一个batch。当收集足够的batch进行高效压缩后生成channel，并以frame的形式发送到L1来完成L2的信息上传。
 
