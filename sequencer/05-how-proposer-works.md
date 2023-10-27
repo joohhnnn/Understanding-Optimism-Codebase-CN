@@ -194,7 +194,7 @@
     }
 ```
 
-packages/contracts-bedrock/src/L1/L2OutputOracle.sol
+`packages/contracts-bedrock/src/L1/L2OutputOracle.sol`
 
 `L2OutputOracle合约`通过将此来自`L2区块的state root`进行校验，并存入`合约的storage`当中。
 
@@ -257,5 +257,5 @@ packages/contracts-bedrock/src/L1/L2OutputOracle.sol
 ```
 
 ## 总结
-`proposer`的总体实现思路与逻辑相对简单，即定期循环从L1中读取下次需要发送`proposal`的L2区块并与本地L2区块比较，并负责将数据处理并发送到L1当中。其他在提款过程中的其他交易流程大部分由`SDK`负责，可以详细阅读我们放在文章最开头的来自官方的文档。
+`proposer`的总体实现思路与逻辑相对简单，即定期循环从L1中读取下次需要发送`proposal`的L2区块并与本地L2区块比较，并负责将数据处理并发送到L1当中。其他在提款过程中的其他交易流程大部分由`SDK`负责，可以详细阅读我们之前推送的官方对于提款过程部分的描述([source](https://community.optimism.io/docs/protocol/withdrawal-flow/#))。
 如果想要查看在主网中`proposer`的实际行为，可以查看此[proposer address](https://etherscan.io/address/0x473300df21d047806a082244b417f96b32f13a33)

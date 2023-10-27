@@ -10,13 +10,13 @@
 - [**02-libp2p在op-stack中的使用**](https://github.com/joohhnnn/Understanding-Optimism-Codebase-CN/blob/main/sequencer/02-how-optimism-use-libp2p.md)
 - [**03-op-batcher工作原理**](https://github.com/joohhnnn/Understanding-Optimism-Codebase-CN/blob/main/sequencer/03-how-batcher-works.md)
 - [**04-L2派生（derivation）原理**](https://github.com/joohhnnn/Understanding-Optimism-Codebase-CN/blob/main/sequencer/04-how-derivation-works.md)
+- [**05-op-proposer工作原理**](https://github.com/joohhnnn/Understanding-Optimism-Codebase-CN/blob/main/sequencer/05-how-proposer-works.md)
 ### 正在进行：
-- [op-proposer](https://github.com/joohhnnn/Understanding-Optimism-Codebase-CN/tree/main/op-proposer): L2-输出提交者，向L1提交提案
+- [op-program](https://github.com/joohhnnn/Understanding-Optimism-Codebase-CN/tree/main/op-program): 错误证明程序
 ### 待开始：
 - [op-challenger](https://github.com/joohhnnn/Understanding-Optimism-Codebase-CN/tree/main/op-challenger): 争议游戏挑战代理
 - [op-e2e](https://github.com/joohhnnn/Understanding-Optimism-Codebase-CN/tree/main/op-e2e): 使用Go进行所有Bedrock组件的端到端测试
 - [op-heartbeat](https://github.com/joohhnnn/Understanding-Optimism-Codebase-CN/tree/main/op-heartbeat): 心跳监控服务
-- [op-program](https://github.com/joohhnnn/Understanding-Optimism-Codebase-CN/tree/main/op-program): 错误证明程序
 - [op-service](https://github.com/joohhnnn/Understanding-Optimism-Codebase-CN/tree/main/op-service): 通用代码库实用程序
 - [op-wheel](https://github.com/joohhnnn/Understanding-Optimism-Codebase-CN/tree/main/op-wheel): 数据库实用程序
 
