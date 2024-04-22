@@ -36,10 +36,11 @@ OP-Stack在采用BLOB替换之前的CALLDATA作为rollup的数据存储方式后
 [Pull Request(8767) encoding & decoding](https://github.com/ethereum-optimism/optimism/commit/78ecdf523026d0afa45c519524a15b83cbe162c8#diff-30107b16d72d6e958093d83b5d736522a7994cab064187562605c82174400cd5R86)
 
 #### 定义blob
-
+```
 BlobSize        = 4096 * 32
 
 type Blob [BlobSize]byte
+```
 #### blob encoding
 
 [**official specs about blob encoding**](https://github.com/ethereum-optimism/specs/blob/main/specs/protocol/derivation.md#blob-encoding)
