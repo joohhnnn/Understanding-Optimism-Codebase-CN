@@ -13,6 +13,9 @@
 - [**04-L2派生（derivation）原理**](https://github.com/joohhnnn/Understanding-Optimism-Codebase-CN/blob/main/sequencer/04-how-derivation-works.md)
 - [**05-op-proposer工作原理**](https://github.com/joohhnnn/Understanding-Optimism-Codebase-CN/blob/main/sequencer/05-how-proposer-works.md)
 - [**06-OP-Stack在EIP-4844中的升级**](https://github.com/joohhnnn/Understanding-Optimism-Codebase-CN/blob/main/sequencer/06-Upgrade-of-OPStack-in-EIP-4844.md)
+- [**07-什么是fault-proof**](https://github.com/joohhnnn/The-book-of-optimism-fault-proof-CN/blob/main/01-what-is-fault-proof.md)
+- [**08-Fault-Dispute-Game**](https://github.com/joohhnnn/The-book-of-optimism-fault-proof-CN/blob/main/02-fault-dispute-game.md)
+
 
 ### 正在进行：
 
