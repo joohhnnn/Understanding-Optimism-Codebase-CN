@@ -15,6 +15,7 @@
 - [**06-OP-Stack在EIP-4844中的升级**](https://github.com/joohhnnn/Understanding-Optimism-Codebase-CN/blob/main/sequencer/06-Upgrade-of-OPStack-in-EIP-4844.md)
 - [**07-什么是fault-proof**](https://github.com/joohhnnn/The-book-of-optimism-fault-proof-CN/blob/main/01-what-is-fault-proof.md)
 - [**08-Fault-Dispute-Game**](https://github.com/joohhnnn/The-book-of-optimism-fault-proof-CN/blob/main/02-fault-dispute-game.md)
+- [**09-Cannon**](https://github.com/joohhnnn/The-book-of-optimism-fault-proof-CN/blob/main/03-cannon.md)
 
 
 ### 正在进行：
