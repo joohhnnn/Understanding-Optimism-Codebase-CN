@@ -16,15 +16,17 @@
 - [**07-什么是fault-proof**](https://github.com/joohhnnn/The-book-of-optimism-fault-proof-CN/blob/main/01-what-is-fault-proof.md)
 - [**08-Fault-Dispute-Game**](https://github.com/joohhnnn/The-book-of-optimism-fault-proof-CN/blob/main/02-fault-dispute-game.md)
 - [**09-Cannon**](https://github.com/joohhnnn/The-book-of-optimism-fault-proof-CN/blob/main/03-cannon.md)
+- [**10-op-program**](https://github.com/joohhnnn/The-book-of-optimism-fault-proof-CN/blob/main/04-op-program.md)
+- [**11-op-challenger**](https://github.com/joohhnnn/The-book-of-optimism-fault-proof-CN/blob/main/05-op-challenger.md)
 
+---
 
-### 正在进行：
+### [The-book-of-optimism-fault-proof](https://github.com/joohhnnn/The-book-of-optimism-fault-proof)
 
-- [op-program](https://github.com/joohhnnn/Understanding-Optimism-Codebase-CN/tree/main/op-program): 错误证明程序
+---
 
 ### 待开始：
 
-- [op-challenger](https://github.com/joohhnnn/Understanding-Optimism-Codebase-CN/tree/main/op-challenger): 争议游戏挑战代理
 - [op-e2e](https://github.com/joohhnnn/Understanding-Optimism-Codebase-CN/tree/main/op-e2e): 使用Go进行所有Bedrock组件的端到端测试
 - [op-heartbeat](https://github.com/joohhnnn/Understanding-Optimism-Codebase-CN/tree/main/op-heartbeat): 心跳监控服务
 - [op-service](https://github.com/joohhnnn/Understanding-Optimism-Codebase-CN/tree/main/op-service): 通用代码库实用程序
