@@ -76,7 +76,7 @@ for {
 在通过检查的过程中，第一次planSequencerAction设置了计时器。
 
 接下来查看
-
+```go
 	select {
 	case <-sequencerCh:
 		payload, err := s.sequencer.RunNextSequencerAction(ctx)
@@ -93,11 +93,11 @@ for {
 			}
 		}
 		planSequencerAction() // schedule the next sequencer action to keep the sequencing looping
-
+```
 这部分代码是等待刚才计时器到达设定的时间后，被计时器发出的消息所触发。它首先尝试执行下一个序列化动作。如果这个动作成功了，它会尝试通过网络来发布新创建的负载。无论如何，它最终都会调用 planSequencerAction 函数来计划下一个序列化动作，这样就创建了一个持续的循环来处理序列化动作。
 
 接下来让我们查看被触发的RunNextSequencerAction函数的内容
-
+```go
 	// RunNextSequencerAction starts new block building work, or seals existing work,
 	// and is best timed by first awaiting the delay returned by PlanNextSequencerAction.
 	// If a new block is successfully sealed, it will be returned for publishing, nil otherwise.
@@ -177,7 +177,7 @@ for {
 			return nil, nil
 		}
 	}
-
+```
 这段代码定义了一个名为 RunNextSequencerAction 的方法，它是 Sequencer 结构的一部分。这个方法的目的是管理区块的创建和封装过程，根据当前的状态和遇到的任何错误来决定下一步的操作。
 
 以下是该方法的主要工作流程和组件：
@@ -207,7 +207,7 @@ for {
 
 
 首先让我们看一下开始新的区块构建的过程
-
+```go
 	func (d *Sequencer) StartBuildingBlock(ctx context.Context) error {
 	…
 	attrs, err := d.attrBuilder.PreparePayloadAttributes(fetchCtx, l2Head, l1Origin.ID())
@@ -226,7 +226,7 @@ for {
 	}
 	…
 }
-
+```
 
 在这段代码中， `RunNextSequencerAction` 方法及其在区块创建和封装过程中的作用如下
 
@@ -261,10 +261,10 @@ for {
 
 在下面的函数中，我们可以看到传入的 epoch 参数是 `l1Origin.ID()`。这符合我们对 epoch 编号的定义。函数负责准备创建新 L2 块的所有必要属性。
 
-```
+```go
 	attrs, err := d.attrBuilder.PreparePayloadAttributes(fetchCtx, l2Head, l1Origin.ID())
 ```
-
+```go
 	func (ba *FetchingAttributesBuilder) PreparePayloadAttributes(ctx context.Context, l2Parent eth.L2BlockRef, epoch eth.BlockID) (attrs *eth.PayloadAttributes, err error) {
 		var l1Info eth.BlockInfo
 		var depositTxs []hexutil.Bytes
@@ -340,31 +340,31 @@ for {
 		GasLimit:              (*eth.Uint64Quantity)(&sysConfig.GasLimit),
 	}, nil
 }
-
+```
 在这个函数中，我们可以看到传入的epoch参数是l1Origin.ID()。符合我们epoch编号的定义。
 
 如代码所示，`PreparePayloadAttributes` 准备新区块的有效载荷属性，它首先根据L1和L2的父块信息确定是否需要获取新的L1存款和系统配置数据。然后它创建一个特殊的系统交易，其中包含与L1块相关的信息和系统配置。这个特殊的交易和其他可能的L1存款交易一起构成了一个交易集，这将被包含在新的L2块的有效负载中。函数确保了时间的一致性和正确的序列号分配，最后返回一个包含所有这些信息的PayloadAttributes结构，以用于新L2块的创建。但在这里，我们只是准备了一个初步的 payload，它仅包含 L1 中的 deposit 交易。之后，我们调用 `StartPayload` 来开始 payload 的下一步构建。
 
 
 在获取Attribute后，我们继续往下看
-
+```go
 	attrs.NoTxPool = uint64(attrs.Timestamp) > l1Origin.Time+d.config.MaxSequencerDrift
-
+```
 判断是否需要产生空区块，注意这里的空区块也至少包含L1信息存款和任何用户存款。如果需要产生空区块，我们通过设置NoTxPool为true来处理，这将导致排序器不包含来自事务池的任何交易。
 
 接下来会调用StartPayload去开启这个payload的构建
-
+```go
 	errTyp, err := d.engine.StartPayload(ctx, l2Head, attrs, false)
 	if err != nil {
 		// 如果在启动有效载荷构建过程时出现错误，则返回格式化的错误消息
 		return fmt.Errorf("failed to start building on top of L2 chain %s, error (%d): %w", l2Head, errTyp, err)
 	}
-
+```
 #### StartPayload 函数
 
 `StartPayload` 主要是触发了ForkchoiceUpdate和更新了EngineQueue中的building的一些状态，如buildingID等，后续再次RunNextSequencerAction时会根据这个id来找找到正在构建的ID
 
-```
+```go
 	func (eq *EngineQueue) StartPayload(ctx context.Context, parent eth.L2BlockRef, attrs *eth.PayloadAttributes, updateSafe bool) (errType BlockInsertionErrType, err error) {
 		if eq.isEngineSyncing() {
 			return BlockInsertTemporaryErr, fmt.Errorf("engine is in progess of p2p sync")
@@ -388,7 +388,7 @@ for {
 		return BlockInsertOK, nil
 	}
 ```
-```
+```go
    func StartPayload(ctx context.Context, eng Engine, fc eth.ForkchoiceState, attrs *eth.PayloadAttributes) (id eth.PayloadID, errType BlockInsertionErrType, err error) {
 	…
 	fcRes, err := eng.ForkchoiceUpdate(ctx, &fc, attrs)
@@ -404,10 +404,10 @@ for {
 
 
 ForkchoiceUpdate函数是对调用的包装方法，其内部处理了对engine层（op-geth）的engineApi的调用，这里调用了engine_forkchoiceUpdatedV1去由EL产生区块
-
+```go
 	var result eth.ForkchoiceUpdatedResult
 	err := s.client.CallContext(fcCtx, &result, "engine_forkchoiceUpdatedV1", fc, attributes)
-
+```
 
 这个函数内部调用了 `engine_forkchoiceUpdatedV1` 方法来处理 Fork Choice 的更新和新的 Payload 的创建。
 
@@ -417,7 +417,7 @@ ForkchoiceUpdate函数是对调用的包装方法，其内部处理了对engine�
 
 在op-geth中，处理改请求的为forkchoiceUpdated函数，此函数首先获取和验证与提供的 fork choice 状态相关的各种区块，然后基于这些信息和可选的负载属性来创建一个新的负载（即一个新的区块）。如果负载创建成功，它将返回一个包含新负载 ID 的有效响应，否则它将返回一个错误。
 关键代码如下
-
+```go
 	if payloadAttributes != nil {
 		if api.eth.BlockChain().Config().Optimism != nil && payloadAttributes.GasLimit == nil {
 			return engine.STATUS_INVALID, engine.InvalidPayloadAttributes.With(errors.New("gasLimit parameter is required"))
@@ -454,9 +454,9 @@ ForkchoiceUpdate函数是对调用的包装方法，其内部处理了对engine�
 		api.localBlocks.put(id, payload)
 		return valid(&id), nil
 	}
-
+```
 在这里，首先把刚才我们在op-node中创建的payload加载到args当中，再把args传到BuildPayload函数当中
-
+```go
 	// buildPayload builds the payload according to the provided parameters.
 	func (w *worker) buildPayload(args *BuildPayloadArgs) (*Payload, error) {
 		// Build the initial version with no transaction included. It should be fast
@@ -505,7 +505,7 @@ ForkchoiceUpdate函数是对调用的包装方法，其内部处理了对engine�
 		}()
 		return payload, nil
 	}
-
+```
 初始化阶段：
 
 首先，它使用提供的参数（但不包含任何交易）快速构建一个初始版本的空负载（即一个不包含任何交易的区块）。
@@ -528,7 +528,7 @@ ForkchoiceUpdate函数是对调用的包装方法，其内部处理了对engine�
 
 那么当args.NoTxPool为假时，究竟是怎么运行的呢？
 答案藏在 getSealingBlock函数里
-
+```go
 	func (w *worker) getSealingBlock(parent common.Hash, timestamp uint64, coinbase common.Address, random common.Hash, withdrawals types.Withdrawals, noTxs bool, transactions types.Transactions, gasLimit *uint64) (*types.Block, *big.Int, error) {
 		req := &getWorkReq{
 			params: &generateParams{
@@ -556,10 +556,10 @@ ForkchoiceUpdate函数是对调用的包装方法，其内部处理了对engine�
 			return nil, nil, errors.New("miner closed")
 		}
 	}
-
+```
 
 在这个部分，我们看到 `mainLoop` 函数通过监听 `getWorkCh` 通道来接收新的 Payload 创建请求。一旦接收到请求，它就会触发 `generateWork` 函数来开始新 Payload 的创建过程。
-
+```go
 	case req := <-w.getWorkCh:
 		block, fees, err := w.generateWork(req.params)
 		req.result <- &newPayloadResult{
@@ -567,7 +567,7 @@ ForkchoiceUpdate函数是对调用的包装方法，其内部处理了对engine�
 			block: block,
 			fees:  fees,
 		}
-
+```
 ### GenerateWork 函数
 
 `GenerateWork` 函数是新 Payload 创建流程的最后一步。它负责准备工作并创建新的区块。
@@ -629,7 +629,7 @@ ForkchoiceUpdate函数是对调用的包装方法，其内部处理了对engine�
 在开始阶段，我们首先在内存池中构建一个新的区块。这里特别注意到 `NoTxPool` 参数的应用，它是之前在 Sequencer 中设置的。这一段代码负责区块的初步构建和后续的优化工作。
 
 其中关键步骤在于	
-
+```go
 	if !genParams.noTxs {
 		interrupt := new(atomic.Int32)
 		timer := time.AfterFunc(w.newpayloadTimeout, func() {
@@ -642,7 +642,7 @@ ForkchoiceUpdate函数是对调用的包装方法，其内部处理了对engine�
 			log.Warn("Block building is interrupted", "allowance", common.PrettyDuration(w.newpayloadTimeout))
 		}
 	}
-
+```
 这一部分终于用到了在之前在sequencer中设置的NoTxPool参数，然后开始在内存池中构建新的区块（这里的内存池里的交易来自自身和其他节点，且由于gossip是默认关闭的，其他节点之间是没有内存池交易互通的，因此这就是为什么sequencer的内存池是私有的原因）
 
 至此，block已经在sequencer的节点中产生区块了。但是buildPayload函数创建的是一个初始的、结构上正确的区块，并在一个后台进程中不断优化它以增加其交易内容和潜在的矿工收益，但它的有效性和认可是依赖于后续的网络共识过程的。也就是说他还需要后续的步骤来停止这个更新，而确定一个最终的块。
@@ -651,15 +651,15 @@ ForkchoiceUpdate函数是对调用的包装方法，其内部处理了对engine�
 在当前阶段，我们已经确定了在EngineQueue当中的buildingID已经设置，并且由这个payload派生的区块已经在op-geth中产生。
 接下来，sequencer由于在最开始设置的time定时器触发，再次调用RunNextSequencerAction方法。
 进入判断 但是在这次，我们的buildingID已经存在，因此进入CompleteBuildingBlock的阶段。
-
+```go
 	if onto, buildingID, safe := d.engine.BuildingPayload(); buildingID != (eth.PayloadID{}) {
 			…
 			payload, err := d.CompleteBuildingBlock(ctx)
 			…
 		}
-
+```
 CompleteBuildingBlock在内部调用了ConfirmPayload方法
-
+```go
 	// ConfirmPayload ends an execution payload building process in the provided Engine, and persists the payload as the canonical head.
 	// If updateSafe is true, then the payload will also be recognized as safe-head at the same time.
 	// The severity of the error is distinguished to determine whether the payload was valid and can become canonical.
@@ -674,7 +674,7 @@ CompleteBuildingBlock在内部调用了ConfirmPayload方法
 		…
 		return payload, BlockInsertOK, nil
 	}
-
+```
 在这里可以参考这张oplabs给出来的插图
 
 ![ENGINE](../resources/engine.svg)
@@ -692,7 +692,7 @@ CompleteBuildingBlock在内部调用了ConfirmPayload方法
 
 第二步 GetPayload方法 
 获取我们第一步构建的块的ExecutionPayload
-
+```go
 	// Resolve returns the latest built payload and also terminates the background
 	// thread for updating payload. It's safe to be called multiple times.
 	func (payload *Payload) Resolve() *engine.ExecutionPayloadEnvelope {
@@ -709,11 +709,11 @@ CompleteBuildingBlock在内部调用了ConfirmPayload方法
 		}
 		return engine.BlockToExecutableData(payload.empty, big.NewInt(0))
 	}
-
+```
 GetPayload方法通过向我们第一步开启的协程中的payload.stop通道发送型号，来停止block的重构。同时将最新的block的数据（ExecutionPayload）发送回sequencer（op-node）
 
 第三步 NewPayload方法
-
+```go
 	func (api *ConsensusAPI) newPayload(params engine.ExecutableData) (engine.PayloadStatusV1, error) {
 		…
 		block, err := engine.ExecutableDataToBlock(params)
@@ -734,12 +734,12 @@ GetPayload方法通过向我们第一步开启的协程中的payload.stop通道�
 		}
 		…
 	}
-
+```
 这里先根据我们最终确认的payload相关参数，构建一个区块，再将这个区块插入我们的blockChain当中。
 
 第四步 ForkchoiceUpdate方法
 
-
+```go
 	func (api *ConsensusAPI) forkchoiceUpdated(update engine.ForkchoiceStateV1, payloadAttributes *engine.PayloadAttributes) (engine.ForkChoiceResponse, error) {
 		…
 		…
@@ -761,13 +761,13 @@ GetPayload方法通过向我们第一步开启的协程中的payload.stop通道�
 		}
 		…
 	}
-
+```
 通过SetFinalized将我们之前几步产生的block进行Finalized
 此方法将一个特定的区块标记为已“最终确定(finalized)”。在区块链网络中，当一个区块被标记为“最终确定(finalized)”时，意味着该区块及其所有先前的区块都不可逆转，它们将永远成为区块链的一部分。这是一个非常重要的安全特性，确保一旦一个区块被最终确定，则它不可能被另一个分叉所替代。
 
 
 这样，一个基础的l2的block的构建就算是完成了，后续的工作就是把这个新的l2的信息记录在sequencer当中，让我们返回到ConfirmPayload函数中
-
+```go
 		payload, errTyp, err := ConfirmPayload(ctx, eq.log, eq.engine, fc, eq.buildingID, eq.buildingSafe)
 		if err != nil {
 			return nil, errTyp, fmt.Errorf("failed to complete building on top of L2 chain %s, id: %s, error (%d): %w", eq.buildingOnto, eq.buildingID, errTyp, err)
@@ -781,7 +781,7 @@ GetPayload方法通过向我们第一步开启的协程中的payload.stop通道�
 		eq.engineSyncTarget = ref
 		eq.metrics.RecordL2Ref("l2_unsafe", ref)
 		eq.metrics.RecordL2Ref("l2_engineSyncTarget", ref)
-
+```
 
 可以看到payload被解析为PayloadToBlockRe（PayloadToBlockRef extracts the essential L2BlockRef information from an execution payload, falling back to genesis information if necessary.）例如unsafeHead。这些数据会被后续的例如区块传播等步骤使用
 

@@ -41,7 +41,7 @@ OP-Stack在采用BLOB替换之前的CALLDATA作为rollup的数据存储方式后
 
 #### 定义blob
 
-```
+```go
 BlobSize        = 4096 * 32
 
 type Blob [BlobSize]byte
@@ -55,7 +55,7 @@ type Blob [BlobSize]byte
 以下为Pull Request(8767)的部分截取代码
 通过4096次循环，它读取总共31*4096字节的数据，这些数据随后被加入到blob中。
 
-```
+```go
 func (b *Blob) FromData(data Data) error {
 	if len(data) > MaxBlobDataSize {
 		return fmt.Errorf("data is too large for blob. len=%v", len(data))
@@ -84,7 +84,7 @@ func (b *Blob) FromData(data Data) error {
 
 blob数据的解码，原理同上述的数据编码
 
-```
+```go
 func (b *Blob) ToData() (Data, error) {
 	data := make(Data, 4096*32)
 	for i := 0; i < 4096; i++ {
@@ -110,7 +110,7 @@ func (b *Blob) ToData() (Data, error) {
 
 #### flag配置
 
-```
+```go
 switch c.DataAvailabilityType {
 case flags.CalldataType:
 case flags.BlobsType:
@@ -123,7 +123,7 @@ default:
 
 BatchSubmitter的功能从之前仅发送calldata数据扩展为根据情况发送calldata或blob类型的数据。Blob类型的数据通过之前提到的FromData（blob-encode）函数在blobTxCandidate内部进行编码
 
-```
+```go
 func (l *BatchSubmitter) sendTransaction(txdata txData, queue *txmgr.Queue[txData], receiptsCh chan txmgr.TxReceipt[txData]) error {
 	// Do the gas estimation offline. A value of 0 will cause the [txmgr] to estimate the gas limit.
 	data := txdata.Bytes()
@@ -175,7 +175,7 @@ func (l *BatchSubmitter) blobTxCandidate(data []byte) (*txmgr.TxCandidate, error
 GetBlob负责获取blob数据，其主要逻辑包括利用4096个字段元素构建完整的blob，并通过commitment验证构建的blob的正确性。
 同时，GetBlob也参与了上层[L1Retrieval中的逻辑流程](https://github.com/joohhnnn/Understanding-Optimism-Codebase-CN/blob/main/sequencer/04-how-derivation-works.md)。
 
-```
+```go
 func (p *PreimageOracle) GetBlob(ref eth.L1BlockRef, blobHash eth.IndexedBlobHash) *eth.Blob {
 	// Send a hint for the blob commitment & blob field elements.
 	blobReqMeta := make([]byte, 16)
