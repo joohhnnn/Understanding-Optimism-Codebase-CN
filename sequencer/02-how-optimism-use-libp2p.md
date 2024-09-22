@@ -408,6 +408,59 @@ gossip在分布式系统中用于确保数据一致性，并修复由多播引�
 
 在libp2p的pubsub系统中，节点首先从其他节点接收消息，然后检查消息的有效性。如果消息有效并且符合节点的订阅标准，节点会考虑将其转发给其他节点。基于某些策略，如网络拓扑和节点的订阅情况，节点会决定是否将消息转发给其它节点。如果决定转发，节点会将消息发送给与其连接并订阅了相同主题的所有节点。在转发过程中，为防止消息在网络中无限循环，通常会有机制来跟踪已转发的消息，并确保不会多次转发同一消息。同时，消息可能具有“生存时间”（TTL）属性，定义了消息可以在网络中转发的次数或时间，每当消息被转发时，TTL值都会递减，直到消息不再被转发为止。在验证方面，消息通常会通过一些验证过程，例如检查消息的签名和格式，以确保消息的完整性和真实性。在libp2p的pubsub模型中，这个过程确保了消息能够广泛传播到网络中的许多节点，同时避免了无限循环和网络拥塞，实现了有效的消息传递和处理。
 
+#### 区块的校验
+
+与 L1 类似，节点在接收区块时会进行校验。Optimism 的主要区别在于，在 L1 中，验证的是多个选定的 beacon 节点的签名，而在 Optimism 中，只验证 sequencer 节点的签名。
+
+以签署和验证签名的过程为例：
+
+- 当 sequencer 通过 P2P 网络发布区块时，[sequencer 会对区块进行签名。](https://github.com/ethereum-optimism/optimism/blob/c5007bb4be66e08b9e4db51c72096912d69eeb0c/op-node/p2p/gossip.go#L547)
+  
+```golang
+
+func (p *publisher) PublishL2Payload(ctx context.Context, envelope *eth.ExecutionPayloadEnvelope, signer Signer) error {
+……
+	sig, err := signer.Sign(ctx, SigningDomainBlocksV1, p.cfg.L2ChainID, payloadData)
+	if err != nil {
+		return fmt.Errorf("failed to sign execution payload with signer: %w", err)
+	}
+	copy(data[:65], sig[:])
+
+……
+
+```
+- 当验证者接收到区块时，[将检查签名者是否为 sequencer 的签名地址。](https://github.com/ethereum-optimism/optimism/blob/c5007bb4be66e08b9e4db51c72096912d69eeb0c/op-node/p2p/gossip.go#L434)
+  
+```golang
+func verifyBlockSignature(log log.Logger, cfg *rollup.Config, runCfg GossipRuntimeConfig, id peer.ID, signatureBytes []byte, payloadBytes []byte) pubsub.ValidationResult {
+	signingHash, err := BlockSigningHash(cfg, payloadBytes)
+	if err != nil {
+		log.Warn("failed to compute block signing hash", "err", err, "peer", id)
+		return pubsub.ValidationReject
+	}
+
+	pub, err := crypto.SigToPub(signingHash[:], signatureBytes)
+	if err != nil {
+		log.Warn("invalid block signature", "err", err, "peer", id)
+		return pubsub.ValidationReject
+	}
+	addr := crypto.PubkeyToAddress(*pub)
+
+	// In the future we may load & validate block metadata before checking the signature.
+	// And then check the signer based on the metadata, to support e.g. multiple p2p signers at the same time.
+	// For now we only have one signer at a time and thus check the address directly.
+	// This means we may drop old payloads upon key rotation,
+	// but this can be recovered from like any other missed unsafe payload.
+	if expected := runCfg.P2PSequencerAddress(); expected == (common.Address{}) {
+		log.Warn("no configured p2p sequencer address, ignoring gossiped block", "peer", id, "addr", addr)
+		return pubsub.ValidationIgnore
+	} else if addr != expected {
+		log.Warn("unexpected block author", "err", err, "peer", id, "addr", addr, "expected", expected)
+		return pubsub.ValidationReject
+	}
+	return pubsub.ValidationAccept
+}
+```
 
 #### 当存在缺失区块，通过p2p快速同步
 
