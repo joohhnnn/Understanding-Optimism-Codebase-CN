@@ -41,6 +41,8 @@ OP-Stack在采用BLOB替换之前的CALLDATA作为rollup的数据存储方式后
 
 #### 定义blob
 
+> **源代码**: [op-service/eth/blob.go (v1.7.4)](https://github.com/ethereum-optimism/optimism/blob/v1.7.4/op-service/eth/blob.go#L31)
+
 ```go
 BlobSize        = 4096 * 32
 
@@ -54,6 +56,8 @@ type Blob [BlobSize]byte
 需要注意的是，此specs对应的是最新版本的代码，而下方PR截取的代码则为最初的简化版本。主要区别在于：Blob类型被分为4096个字段元素，每个字段元素的最大大小受限于特定模的大小，即math.log2(BLS_MODULUS) = 254.8570894...，这意味着每个字段元素的大小不会超过254位，即31.75字节。最初的演示代码只使用了31字节，放弃了0.75字节的空间。而在最新版本的代码中，通过四个字段元素的联合作用，充分利用了每个字段元素的0.75字节空间，从而提高了数据的使用效率。
 以下为Pull Request(8767)的部分截取代码
 通过4096次循环，它读取总共31*4096字节的数据，这些数据随后被加入到blob中。
+
+> **源代码**: [op-service/eth/blob.go (commit 78ecdf5)](https://github.com/ethereum-optimism/optimism/blob/78ecdf523026d0afa45c519524a15b83cbe162c8/op-service/eth/blob.go#L86)
 
 ```go
 func (b *Blob) FromData(data Data) error {
@@ -83,6 +87,8 @@ func (b *Blob) FromData(data Data) error {
 #### blob decoding
 
 blob数据的解码，原理同上述的数据编码
+
+> **源代码**: [op-service/eth/blob.go (commit 78ecdf5)](https://github.com/ethereum-optimism/optimism/blob/78ecdf523026d0afa45c519524a15b83cbe162c8/op-service/eth/blob.go#L111)
 
 ```go
 func (b *Blob) ToData() (Data, error) {
@@ -122,6 +128,8 @@ default:
 #### BatchSubmitter
 
 BatchSubmitter的功能从之前仅发送calldata数据扩展为根据情况发送calldata或blob类型的数据。Blob类型的数据通过之前提到的FromData（blob-encode）函数在blobTxCandidate内部进行编码
+
+> **注意**: 此代码来自Pull Request 8769，如文档警告所述，可能不对应特定的发布版本。
 
 ```go
 func (l *BatchSubmitter) sendTransaction(txdata txData, queue *txmgr.Queue[txData], receiptsCh chan txmgr.TxReceipt[txData]) error {
@@ -174,6 +182,8 @@ func (l *BatchSubmitter) blobTxCandidate(data []byte) (*txmgr.TxCandidate, error
 
 GetBlob负责获取blob数据，其主要逻辑包括利用4096个字段元素构建完整的blob，并通过commitment验证构建的blob的正确性。
 同时，GetBlob也参与了上层[L1Retrieval中的逻辑流程](https://github.com/joohhnnn/Understanding-Optimism-Codebase-CN/blob/main/sequencer/04-how-derivation-works.md)。
+
+> **注意**: 此代码来自Pull Request 9098，如文档警告所述，可能不对应特定的发布版本。
 
 ```go
 func (p *PreimageOracle) GetBlob(ref eth.L1BlockRef, blobHash eth.IndexedBlobHash) *eth.Blob {
