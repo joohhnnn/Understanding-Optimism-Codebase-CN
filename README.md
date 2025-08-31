@@ -2,6 +2,26 @@
 
 此文档为对Optimism的codebase进行全面讲解，意在帮助新来到Optimism的开发者快速上手，和真正了解在codebase的代码流中是怎么工作的。
 
+## 📌 代码版本信息
+
+### 主要文档
+文档00-05中的所有代码示例基于**Optimism v1.1.4**版本。
+
+- **GitHub仓库**: [ethereum-optimism/optimism](https://github.com/ethereum-optimism/optimism)
+- **版本标签**: [v1.1.4](https://github.com/ethereum-optimism/optimism/tree/v1.1.4)
+- **发布日期**: 2023年8月
+- **op-geth版本**: [commit 9cc072e](https://github.com/ethereum-optimism/op-geth/commit/9cc072e922f66d35b32a11e3751ecfd033b768f7) (用于op-geth相关代码)
+
+### EIP-4844文档 (06)
+文档06基于2024年初的特定PR提交，如文档中所注明。
+
+> ⚠️ **注意**: 由于Optimism代码库持续更新，当前最新版本的代码结构可能与本文档中的示例有所不同。所有GitHub链接已验证其对应版本的准确性。
+
+### 版本兼容性说明
+- **v1.1.4版本**: 这是本文档主要参考的稳定版本，包含了完整的Bedrock升级功能
+- **EIP-4844支持**: 文档06中的blob功能基于早期PR设计，可能与生产环境代码存在差异
+- **持续更新**: 建议在开发时参考最新的官方文档和代码库
+
 ## 项目目录
 
 ### 已完成：
