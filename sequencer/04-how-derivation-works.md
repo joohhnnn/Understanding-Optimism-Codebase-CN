@@ -36,6 +36,9 @@ hoho 船长，让我们深潜🤿
 `op-node/rollup/derive/l1_traversal.go`
 
 通过查询当前`origin.Number + 1`的块高来获取最新的l1块，如果此块不存在，即`error`和`ethereum.NotFound`匹配，那么就代表当前块高即为最新的区块，下一个区块还未在l1上产生。如果获取成功，将最新的区块号记录在`l1t.block`中
+
+> **Source Code**: [op-node/rollup/derive/l1_traversal.go (v1.1.4)](https://github.com/ethereum-optimism/optimism/blob/v1.1.4/op-node/rollup/derive/l1_traversal.go#L60)
+
 ```go
     func (l1t *L1Traversal) AdvanceL1Block(ctx context.Context) error {
         origin := l1t.block
@@ -64,6 +67,8 @@ hoho 船长，让我们深潜🤿
 首先先通过`InfoAndTxsByHash`将刚才获取的区块的所有`transactions`拿到，然后将`transactions`和我们的batcherAddr还有我们的config传入到`DataFromEVMTransactions`函数中，
 为什么要传这些参数呢？因为我们在过滤这些交易的时候，需要保证`batcher`地址和接收地址的准确性（权威性）。在`DataFromEVMTransactions`接收到这些参数后，通过循环对每个交易进行地址的准确性过滤，找到正确的`batch transactions`。
 
+> **Source Code**: [op-node/rollup/derive/calldata_source.go (v1.1.4)](https://github.com/ethereum-optimism/optimism/blob/v1.1.4/op-node/rollup/derive/calldata_source.go#L62)
+
 ```go
     func NewDataSource(ctx context.Context, log log.Logger, cfg *rollup.Config, fetcher L1TransactionFetcher, block eth.BlockID, batcherAddr common.Address) DataIter {
         _, txs, err := fetcher.InfoAndTxsByHash(ctx, block.Hash)
@@ -84,6 +89,8 @@ hoho 船长，让我们深潜🤿
         }
     }
 ```
+
+> **Source Code**: [op-node/rollup/derive/calldata_source.go (v1.1.4)](https://github.com/ethereum-optimism/optimism/blob/v1.1.4/op-node/rollup/derive/calldata_source.go#L107)
 
 ```go
     func DataFromEVMTransactions(config *rollup.Config, batcherAddr common.Address, txs types.Transactions, log log.Logger) []eth.Data {
@@ -117,6 +124,8 @@ hoho 船长，让我们深潜🤿
 
 此函数通过`NextData`函数获取上一步的data，然后将此data解析后添加到`FrameQueue`的`frames`数组里面，并返回在数组中第一个`frame`。
 
+> **Source Code**: [op-node/rollup/derive/frame_queue.go (v1.1.4)](https://github.com/ethereum-optimism/optimism/blob/v1.1.4/op-node/rollup/derive/frame_queue.go#L36)
+
 ```go
     func (fq *FrameQueue) NextFrame(ctx context.Context) (Frame, error) {
         // Find more frames if we need to
@@ -147,6 +156,8 @@ hoho 船长，让我们深潜🤿
 
 `NextData`函数负责从当前`channel bank`中读出第一个`channel`中的`raw data`并返回，同时负责调用`NextFrame`获取`frame`并装载到`channel`中
 
+> **Source Code**: [op-node/rollup/derive/channel_bank.go (v1.1.4)](https://github.com/ethereum-optimism/optimism/blob/v1.1.4/op-node/rollup/derive/channel_bank.go#L158)
+
 ```go
     func (cb *ChannelBank) NextData(ctx context.Context) ([]byte, error) {
         // Do the read from the channel bank first
@@ -175,6 +186,8 @@ hoho 船长，让我们深潜🤿
 `op-node/rollup/derive/channel_in_reader.go`
 
 `NextBatch`函数主要负责将刚才到`raw data` 解码成具有`batch`结构的数据并返回。其中`WriteChannel`函数的作用是提供一个函数并赋值给`nextBatchFn`，这个函数的目的是创建一个读取器，从读取器中解码`batch`结构的数据并返回。
+
+> **Source Code**: [op-node/rollup/derive/channel_in_reader.go (v1.1.4)](https://github.com/ethereum-optimism/optimism/blob/v1.1.4/op-node/rollup/derive/channel_in_reader.go#L63)
 
 ```go
     func (cr *ChannelInReader) NextBatch(ctx context.Context) (*BatchData, error) {
@@ -217,6 +230,8 @@ hoho 船长，让我们深潜🤿
 
 `createNextAttributes`函数在内部调用`PreparePayloadAttributes`
 
+> **Source Code**: [op-node/rollup/derive/attributes_queue.go (v1.1.4)](https://github.com/ethereum-optimism/optimism/blob/v1.1.4/op-node/rollup/derive/attributes_queue.go#L51)
+
 ```go
     func (aq *AttributesQueue) NextAttributes(ctx context.Context, l2SafeHead eth.L2BlockRef) (*eth.PayloadAttributes, error) {
         // Get a batch if we need it
@@ -239,6 +254,8 @@ hoho 船长，让我们深潜🤿
 
     }
 ```
+
+> **Source Code**: [op-node/rollup/derive/attributes_queue.go (v1.1.4)](https://github.com/ethereum-optimism/optimism/blob/v1.1.4/op-node/rollup/derive/attributes_queue.go#L74)
 
 ```go
     func (aq *AttributesQueue) createNextAttributes(ctx context.Context, batch *BatchData, l2SafeHead eth.L2BlockRef) (*eth.PayloadAttributes, error) {
@@ -286,6 +303,8 @@ hoho 船长，让我们深潜🤿
 
 `tryNextSafeAttributes`函数在内部判断是否当前`safehead`和`unsafehead`的关系，如果一切正常，则触发`consolidateNextSafeAttributes`函数来把`engine queue`中的`safeHead` 设置为我们上一步拿到的`safeAttributes`构造出来的`safe`区块，并将`needForkchoiceUpdate`设置为`true`，触发后续的`ForkchoiceUpdate`来把EL中的区块状态改成`safe`而真正将`unsafe`区块转化成`safe`区块。最后的`postProcessSafeL2`函数是将`safehead`加入到`finalizedL1`队列中，以供后续`finalied`使用。
 
+> **Source Code**: [op-node/rollup/derive/engine_queue.go (v1.1.4)](https://github.com/ethereum-optimism/optimism/blob/v1.1.4/op-node/rollup/derive/engine_queue.go#L548)
+
 ```go
     func (eq *EngineQueue) tryNextSafeAttributes(ctx context.Context) error {
         ……
@@ -316,6 +335,8 @@ safe区块并不是真的牢固安全的区块，他还需要进行进一步的�
 
 `tryFinalizePastL2Blocks`函数在内部对`finalized队列`中区块进行64个区块的校验，如果通过校验，调用`tryFinalizeL2`来完成`engine queue`当中`finalized`的设置和标记`needForkchoiceUpdate`的更新。
 
+> **Source Code**: [op-node/rollup/derive/engine_queue.go (v1.1.4)](https://github.com/ethereum-optimism/optimism/blob/v1.1.4/op-node/rollup/derive/engine_queue.go#L328)
+
 ```go
     func (eq *EngineQueue) tryFinalizePastL2Blocks(ctx context.Context) error {
         ……
@@ -334,6 +355,8 @@ safe区块并不是真的牢固安全的区块，他还需要进行进一步的�
         return nil
     }
 ```
+
+> **Source Code**: [op-node/rollup/derive/engine_queue.go (v1.1.4)](https://github.com/ethereum-optimism/optimism/blob/v1.1.4/op-node/rollup/derive/engine_queue.go#L363)
 
 ```go
     func (eq *EngineQueue) tryFinalizeL2() {
@@ -356,6 +379,8 @@ safe区块并不是真的牢固安全的区块，他还需要进行进一步的�
 ```
 ### 循环触发
 在`op-node/rollup/driver/state.go`中的`eventLoop`函数中负责触发整个循环过程中的执行入口。主要是间接执行了了`op-node/rollup/derive/engine_queue.go`中`Step`函数
+
+> **Source Code**: [op-node/rollup/derive/engine_queue.go (v1.1.4)](https://github.com/ethereum-optimism/optimism/blob/v1.1.4/op-node/rollup/derive/engine_queue.go#L245)
 
 ```go
 func (eq *EngineQueue) Step(ctx context.Context) error {
