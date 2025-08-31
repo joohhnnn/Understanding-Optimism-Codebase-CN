@@ -60,6 +60,8 @@
 - **SkipSyncStartCheck Flag (`l2.skip-sync-start-check`)**:
     - 该标志用于在确定同步起始点时，跳过对不安全 L2 区块的 L1 起源一致性的合理性检查。当设置为 `true` 时，它会推迟 L1 起源的验证。如果你正在使用 `l2.engine-sync`，建议启用此标志来跳过初始的一致性检查。它的默认值是 `false`，意味着在默认情况下，该合理性检查是启用的。
 
+> **Source Code**: [op-node/flags/flags.go (v1.1.4)](https://github.com/ethereum-optimism/optimism/blob/v1.1.4/op-node/flags/flags.go#L217)
+
 ```go
 	L2EngineSyncEnabled = &cli.BoolFlag{
 		Name:     "l2.engine-sync",
@@ -86,6 +88,8 @@ L2EngineSyncEnabled标志用于在op-node接收到新的unsafe的payload（区�
 
 `EngineSync`为L2EngineSyncEnabled标志的具体表达。在这里嵌套在两个检查函数当中。
 
+> **Source Code**: [op-node/rollup/derive/engine_queue.go (v1.1.4)](https://github.com/ethereum-optimism/optimism/blob/v1.1.4/op-node/rollup/derive/engine_queue.go#L450)
+
 ```go
    // checkNewPayloadStatus checks returned status of engine_newPayloadV1 request for next unsafe payload.
    // It returns true if the status is acceptable.
@@ -110,6 +114,8 @@ L2EngineSyncEnabled标志用于在op-node接收到新的unsafe的payload（区�
 
 让我们把视角转到op-geth的 `eth/catalyst/api.go`当中，当parent区块缺失后，触发sync，并且返回SYNCING Status
 
+> **Source Code**: [eth/catalyst/api.go (op-geth)](https://github.com/ethereum-optimism/op-geth/blob/9cc072e922f66d35b32a11e3751ecfd033b768f7/eth/catalyst/api.go#L453)
+
 ```go
    func (api *ConsensusAPI) newPayload(params engine.ExecutableData) (engine.PayloadStatusV1, error) {
       …
@@ -127,6 +133,8 @@ L2EngineSyncEnabled标志用于在op-node接收到新的unsafe的payload（区�
    }
 ```
 
+> **Source Code**: [eth/catalyst/api.go (op-geth)](https://github.com/ethereum-optimism/op-geth/blob/9cc072e922f66d35b32a11e3751ecfd033b768f7/eth/catalyst/api.go#L559)
+
 ```go
    func (api *ConsensusAPI) delayPayloadImport(block *types.Block) (engine.PayloadStatusV1, error) {
       …
@@ -143,6 +151,8 @@ SkipSyncStartCheck这个标识符主要是帮助在选择sync模式下，优化�
 在`op-node/rollup/sync/start.go`目录中
 
 FindL2Heads函数通过从给定的“开始”（start）点（即之前的不安全L2区块）开始逐步回溯，来查找这三种类型的区块。在回溯过程中，该函数会检查各个L2区块的L1源是否与已知的L1规范链匹配，以及是否符合其他一些条件和检查。这允许函数更快地确定L2的“安全”头部，从而可能加速整个同步过程。
+
+> **Source Code**: [op-node/rollup/sync/start.go (v1.1.4)](https://github.com/ethereum-optimism/optimism/blob/v1.1.4/op-node/rollup/sync/start.go#L106)
 
 ```go
    func FindL2Heads(ctx context.Context, cfg *rollup.Config, l1 L1Chain, l2 L2Chain, lgr log.Logger, syncCfg *Config) (result *FindHeadsResult, err error) {
@@ -204,6 +214,8 @@ FindL2Heads函数通过从给定的“开始”（start）点（即之前的不�
 
 初始化rpcSync，如果rpcSyncClient设置，赋值给rpcSync
 
+> **Source Code**: [op-node/node/node.go (v1.1.4)](https://github.com/ethereum-optimism/optimism/blob/v1.1.4/op-node/node/node.go#L207)
+
 ```go
    func (n *OpNode) initRPCSync(ctx context.Context, cfg *Config) error {
       rpcSyncClient, rpcCfg, err := cfg.L2Sync.Setup(ctx, n.log, &cfg.Rollup)
@@ -223,6 +235,8 @@ FindL2Heads函数通过从给定的“开始”（start）点（即之前的不�
 ```
 
 启动node，如果rpcSync非空，开启rpcSync eventloop
+
+> **Source Code**: [op-node/node/node.go (v1.1.4)](https://github.com/ethereum-optimism/optimism/blob/v1.1.4/op-node/node/node.go#L282)
 
 ```go
    func (n *OpNode) Start(ctx context.Context) error {
@@ -250,6 +264,8 @@ FindL2Heads函数通过从给定的“开始”（start）点（即之前的不�
 `op-node/sources/sync_client.go`
 
 一旦接收到s.requests通道里的信号后（区块号），调用fetchUnsafeBlockFromRpc函数从RPC节点中获取相应的区块信息。
+
+> **Source Code**: [op-node/sources/sync_client.go (v1.1.4)](https://github.com/ethereum-optimism/optimism/blob/v1.1.4/op-node/sources/sync_client.go#L129)
 
 ```go
    // eventLoop is the main event loop for the sync client.
@@ -295,6 +311,9 @@ FindL2Heads函数通过从给定的“开始”（start）点（即之前的不�
 
 接下来我们来看看从哪里往`s.requests`通道发送信号的呢？
 同文件下的`RequestL2Range`函数，此函数介绍一个需要同步的区块范围，然后将任务通过for循环，分别发送出去。
+
+> **Source Code**: [op-node/sources/sync_client.go (v1.1.4)](https://github.com/ethereum-optimism/optimism/blob/v1.1.4/op-node/sources/sync_client.go#L92)
+
 ```go
    func (s *SyncClient) RequestL2Range(ctx context.Context, start, end eth.L2BlockRef) error {
       // Drain previous requests now that we have new information
@@ -334,6 +353,8 @@ FindL2Heads函数通过从给定的“开始”（start）点（即之前的不�
 ```
 
 在外层的OpNode类型的RequestL2Range实现方法里。可以清楚的看到rpcSync类型的反向链同步是优先选择的。
+
+> **Source Code**: [op-node/node/node.go (v1.1.4)](https://github.com/ethereum-optimism/optimism/blob/v1.1.4/op-node/node/node.go#L376)
 
 ```go
    func (n *OpNode) RequestL2Range(ctx context.Context, start, end eth.L2BlockRef) error {
