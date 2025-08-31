@@ -11,6 +11,8 @@ Sequencer 在 Layer 2 (L2) 解决方案中起到核心作用，主要负责交�
 
 当操作节点（opnode）启动后，Driver 会启动一个 eventloop。在这个 eventloop 中，我们定义了 `sequencerCh` 通道和 `planSequencerAction` 方法。
 
+> **Source Code**: [op-node/rollup/driver/state.go (v1.1.4)](https://github.com/ethereum-optimism/optimism/blob/v1.1.4/op-node/rollup/driver/state.go#L214)
+
 ```go
 sequencerTimer := time.NewTimer(0)
 var sequencerCh <-chan time.Time
@@ -33,6 +35,9 @@ planSequencerAction := func() {
 ### Event Loop 的循环结构
 
 在 event loop 的 for 循环中，首先进行了一系列的检查。例如，我们检查是否启用了 sequencer 和 L1 状态是否已准备好，以确定是否可以触发下一个 sequencer 操作。
+
+> **Source Code**: [op-node/rollup/driver/state.go (v1.1.4)](https://github.com/ethereum-optimism/optimism/blob/v1.1.4/op-node/rollup/driver/state.go#L236)
+
 ```go
 for {    
     // 主条件：检查 Sequencer 是否启用和 L1 状态是否准备好
@@ -76,6 +81,9 @@ for {
 在通过检查的过程中，第一次planSequencerAction设置了计时器。
 
 接下来查看
+
+> **Source Code**: [op-node/rollup/driver/state.go (v1.1.4)](https://github.com/ethereum-optimism/optimism/blob/v1.1.4/op-node/rollup/driver/state.go#L268)
+
 ```go
 	select {
 	case <-sequencerCh:
@@ -97,6 +105,9 @@ for {
 这部分代码是等待刚才计时器到达设定的时间后，被计时器发出的消息所触发。它首先尝试执行下一个序列化动作。如果这个动作成功了，它会尝试通过网络来发布新创建的负载。无论如何，它最终都会调用 planSequencerAction 函数来计划下一个序列化动作，这样就创建了一个持续的循环来处理序列化动作。
 
 接下来让我们查看被触发的RunNextSequencerAction函数的内容
+
+> **Source Code**: [op-node/rollup/driver/sequencer.go (v1.1.4)](https://github.com/ethereum-optimism/optimism/blob/v1.1.4/op-node/rollup/driver/sequencer.go#L199-L255)
+
 ```go
 	// RunNextSequencerAction starts new block building work, or seals existing work,
 	// and is best timed by first awaiting the delay returned by PlanNextSequencerAction.
@@ -207,6 +218,9 @@ for {
 
 
 首先让我们看一下开始新的区块构建的过程
+
+> **Source Code**: [op-node/rollup/driver/sequencer.go (v1.1.4)](https://github.com/ethereum-optimism/optimism/blob/v1.1.4/op-node/rollup/driver/sequencer.go#L63)
+
 ```go
 	func (d *Sequencer) StartBuildingBlock(ctx context.Context) error {
 	…
@@ -261,9 +275,14 @@ for {
 
 在下面的函数中，我们可以看到传入的 epoch 参数是 `l1Origin.ID()`。这符合我们对 epoch 编号的定义。函数负责准备创建新 L2 块的所有必要属性。
 
+> **Source Code**: [op-node/rollup/driver/sequencer.go (v1.1.4)](https://github.com/ethereum-optimism/optimism/blob/v1.1.4/op-node/rollup/driver/sequencer.go#L83)
+
 ```go
 	attrs, err := d.attrBuilder.PreparePayloadAttributes(fetchCtx, l2Head, l1Origin.ID())
 ```
+
+> **Source Code**: [op-node/rollup/derive/attributes.go (v1.1.4)](https://github.com/ethereum-optimism/optimism/blob/v1.1.4/op-node/rollup/derive/attributes.go#L46)
+
 ```go
 	func (ba *FetchingAttributesBuilder) PreparePayloadAttributes(ctx context.Context, l2Parent eth.L2BlockRef, epoch eth.BlockID) (attrs *eth.PayloadAttributes, err error) {
 		var l1Info eth.BlockInfo
@@ -347,12 +366,18 @@ for {
 
 
 在获取Attribute后，我们继续往下看
+
+> **Source Code**: [op-node/rollup/driver/sequencer.go (v1.1.4)](https://github.com/ethereum-optimism/optimism/blob/v1.1.4/op-node/rollup/driver/sequencer.go#L92)
+
 ```go
 	attrs.NoTxPool = uint64(attrs.Timestamp) > l1Origin.Time+d.config.MaxSequencerDrift
 ```
 判断是否需要产生空区块，注意这里的空区块也至少包含L1信息存款和任何用户存款。如果需要产生空区块，我们通过设置NoTxPool为true来处理，这将导致排序器不包含来自事务池的任何交易。
 
 接下来会调用StartPayload去开启这个payload的构建
+
+> **Source Code**: [op-node/rollup/driver/sequencer.go (v1.1.4)](https://github.com/ethereum-optimism/optimism/blob/v1.1.4/op-node/rollup/driver/sequencer.go#L99)
+
 ```go
 	errTyp, err := d.engine.StartPayload(ctx, l2Head, attrs, false)
 	if err != nil {
@@ -363,6 +388,8 @@ for {
 #### StartPayload 函数
 
 `StartPayload` 主要是触发了ForkchoiceUpdate和更新了EngineQueue中的building的一些状态，如buildingID等，后续再次RunNextSequencerAction时会根据这个id来找找到正在构建的ID
+
+> **Source Code**: [op-node/rollup/derive/engine_queue.go (v1.1.4)](https://github.com/ethereum-optimism/optimism/blob/v1.1.4/op-node/rollup/derive/engine_queue.go#L669)
 
 ```go
 	func (eq *EngineQueue) StartPayload(ctx context.Context, parent eth.L2BlockRef, attrs *eth.PayloadAttributes, updateSafe bool) (errType BlockInsertionErrType, err error) {
@@ -388,6 +415,9 @@ for {
 		return BlockInsertOK, nil
 	}
 ```
+
+> **Source Code**: [op-node/rollup/derive/engine_update.go (v1.1.4)](https://github.com/ethereum-optimism/optimism/blob/v1.1.4/op-node/rollup/derive/engine_update.go#L84)
+
 ```go
    func StartPayload(ctx context.Context, eng Engine, fc eth.ForkchoiceState, attrs *eth.PayloadAttributes) (id eth.PayloadID, errType BlockInsertionErrType, err error) {
 	…
@@ -417,6 +447,9 @@ ForkchoiceUpdate函数是对调用的包装方法，其内部处理了对engine�
 
 在op-geth中，处理改请求的为forkchoiceUpdated函数，此函数首先获取和验证与提供的 fork choice 状态相关的各种区块，然后基于这些信息和可选的负载属性来创建一个新的负载（即一个新的区块）。如果负载创建成功，它将返回一个包含新负载 ID 的有效响应，否则它将返回一个错误。
 关键代码如下
+
+> **Source Code**: [eth/catalyst/api.go (op-geth)](https://github.com/ethereum-optimism/op-geth/blob/9cc072e922f66d35b32a11e3751ecfd033b768f7/eth/catalyst/api.go#L205)
+
 ```go
 	if payloadAttributes != nil {
 		if api.eth.BlockChain().Config().Optimism != nil && payloadAttributes.GasLimit == nil {
@@ -456,6 +489,9 @@ ForkchoiceUpdate函数是对调用的包装方法，其内部处理了对engine�
 	}
 ```
 在这里，首先把刚才我们在op-node中创建的payload加载到args当中，再把args传到BuildPayload函数当中
+
+> **Source Code**: [miner/payload_building.go (op-geth)](https://github.com/ethereum-optimism/op-geth/blob/9cc072e922f66d35b32a11e3751ecfd033b768f7/miner/payload_building.go#L172)
+
 ```go
 	// buildPayload builds the payload according to the provided parameters.
 	func (w *worker) buildPayload(args *BuildPayloadArgs) (*Payload, error) {
@@ -528,6 +564,9 @@ ForkchoiceUpdate函数是对调用的包装方法，其内部处理了对engine�
 
 那么当args.NoTxPool为假时，究竟是怎么运行的呢？
 答案藏在 getSealingBlock函数里
+
+> **Source Code**: [miner/worker.go (op-geth)](https://github.com/ethereum-optimism/op-geth/blob/9cc072e922f66d35b32a11e3751ecfd033b768f7/miner/worker.go#L1252)
+
 ```go
 	func (w *worker) getSealingBlock(parent common.Hash, timestamp uint64, coinbase common.Address, random common.Hash, withdrawals types.Withdrawals, noTxs bool, transactions types.Transactions, gasLimit *uint64) (*types.Block, *big.Int, error) {
 		req := &getWorkReq{
@@ -559,6 +598,9 @@ ForkchoiceUpdate函数是对调用的包装方法，其内部处理了对engine�
 ```
 
 在这个部分，我们看到 `mainLoop` 函数通过监听 `getWorkCh` 通道来接收新的 Payload 创建请求。一旦接收到请求，它就会触发 `generateWork` 函数来开始新 Payload 的创建过程。
+
+> **Source Code**: [miner/worker.go (op-geth)](https://github.com/ethereum-optimism/op-geth/blob/9cc072e922f66d35b32a11e3751ecfd033b768f7/miner/worker.go#L578)
+
 ```go
 	case req := <-w.getWorkCh:
 		block, fees, err := w.generateWork(req.params)
@@ -571,6 +613,8 @@ ForkchoiceUpdate函数是对调用的包装方法，其内部处理了对engine�
 ### GenerateWork 函数
 
 `GenerateWork` 函数是新 Payload 创建流程的最后一步。它负责准备工作并创建新的区块。
+
+> **Source Code**: [miner/worker.go (op-geth)](https://github.com/ethereum-optimism/op-geth/blob/9cc072e922f66d35b32a11e3751ecfd033b768f7/miner/worker.go#L1102)
 
 ```go
 
@@ -629,6 +673,9 @@ ForkchoiceUpdate函数是对调用的包装方法，其内部处理了对engine�
 在开始阶段，我们首先在内存池中构建一个新的区块。这里特别注意到 `NoTxPool` 参数的应用，它是之前在 Sequencer 中设置的。这一段代码负责区块的初步构建和后续的优化工作。
 
 其中关键步骤在于	
+
+> **Source Code**: [miner/worker.go (op-geth)](https://github.com/ethereum-optimism/op-geth/blob/9cc072e922f66d35b32a11e3751ecfd033b768f7/miner/worker.go#L1123)
+
 ```go
 	if !genParams.noTxs {
 		interrupt := new(atomic.Int32)
@@ -651,6 +698,9 @@ ForkchoiceUpdate函数是对调用的包装方法，其内部处理了对engine�
 在当前阶段，我们已经确定了在EngineQueue当中的buildingID已经设置，并且由这个payload派生的区块已经在op-geth中产生。
 接下来，sequencer由于在最开始设置的time定时器触发，再次调用RunNextSequencerAction方法。
 进入判断 但是在这次，我们的buildingID已经存在，因此进入CompleteBuildingBlock的阶段。
+
+> **Source Code**: [op-node/rollup/driver/sequencer.go (v1.1.4)](https://github.com/ethereum-optimism/optimism/blob/v1.1.4/op-node/rollup/driver/sequencer.go#L199)
+
 ```go
 	if onto, buildingID, safe := d.engine.BuildingPayload(); buildingID != (eth.PayloadID{}) {
 			…
@@ -659,6 +709,9 @@ ForkchoiceUpdate函数是对调用的包装方法，其内部处理了对engine�
 		}
 ```
 CompleteBuildingBlock在内部调用了ConfirmPayload方法
+
+> **Source Code**: [op-node/rollup/derive/engine_update.go (v1.1.4)](https://github.com/ethereum-optimism/optimism/blob/v1.1.4/op-node/rollup/derive/engine_update.go#L120)
+
 ```go
 	// ConfirmPayload ends an execution payload building process in the provided Engine, and persists the payload as the canonical head.
 	// If updateSafe is true, then the payload will also be recognized as safe-head at the same time.
@@ -692,6 +745,9 @@ CompleteBuildingBlock在内部调用了ConfirmPayload方法
 
 第二步 GetPayload方法 
 获取我们第一步构建的块的ExecutionPayload
+
+> **Source Code**: [miner/payload_building.go (op-geth)](https://github.com/ethereum-optimism/op-geth/blob/9cc072e922f66d35b32a11e3751ecfd033b768f7/miner/payload_building.go#L130)
+
 ```go
 	// Resolve returns the latest built payload and also terminates the background
 	// thread for updating payload. It's safe to be called multiple times.
@@ -713,6 +769,9 @@ CompleteBuildingBlock在内部调用了ConfirmPayload方法
 GetPayload方法通过向我们第一步开启的协程中的payload.stop通道发送型号，来停止block的重构。同时将最新的block的数据（ExecutionPayload）发送回sequencer（op-node）
 
 第三步 NewPayload方法
+
+> **Source Code**: [eth/catalyst/api.go (op-geth)](https://github.com/ethereum-optimism/op-geth/blob/9cc072e922f66d35b32a11e3751ecfd033b768f7/eth/catalyst/api.go#L453)
+
 ```go
 	func (api *ConsensusAPI) newPayload(params engine.ExecutableData) (engine.PayloadStatusV1, error) {
 		…
@@ -738,6 +797,8 @@ GetPayload方法通过向我们第一步开启的协程中的payload.stop通道�
 这里先根据我们最终确认的payload相关参数，构建一个区块，再将这个区块插入我们的blockChain当中。
 
 第四步 ForkchoiceUpdate方法
+
+> **Source Code**: [eth/catalyst/api.go (op-geth)](https://github.com/ethereum-optimism/op-geth/blob/9cc072e922f66d35b32a11e3751ecfd033b768f7/eth/catalyst/api.go#L205)
 
 ```go
 	func (api *ConsensusAPI) forkchoiceUpdated(update engine.ForkchoiceStateV1, payloadAttributes *engine.PayloadAttributes) (engine.ForkChoiceResponse, error) {
@@ -767,6 +828,9 @@ GetPayload方法通过向我们第一步开启的协程中的payload.stop通道�
 
 
 这样，一个基础的l2的block的构建就算是完成了，后续的工作就是把这个新的l2的信息记录在sequencer当中，让我们返回到ConfirmPayload函数中
+
+> **Source Code**: [op-node/rollup/derive/engine_queue.go (v1.1.4)](https://github.com/ethereum-optimism/optimism/blob/v1.1.4/op-node/rollup/derive/engine_queue.go#L692)
+
 ```go
 		payload, errTyp, err := ConfirmPayload(ctx, eq.log, eq.engine, fc, eq.buildingID, eq.buildingSafe)
 		if err != nil {
