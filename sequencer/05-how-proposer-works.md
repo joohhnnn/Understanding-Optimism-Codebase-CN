@@ -59,6 +59,8 @@
 
 通过调用`Start`函数来启动`loop`循环，在`loop`的循环中，主要通过函数`FetchNextOutputInfo`负责查看下一个区块是否该发送`proposal`交易，如果需要发送，则直接调用`sendTransaction`函数发送到L1当作，如不需要发送，则进行下一次循环。
 
+> **Source Code**: [op-proposer/proposer/l2_output_submitter.go (v1.1.4)](https://github.com/ethereum-optimism/optimism/blob/v1.1.4/op-proposer/proposer/l2_output_submitter.go#L381)
+
 ```go
     func (l *L2OutputSubmitter) loop() {
         defer l.wg.Done()
@@ -101,6 +103,8 @@
 `op-proposer/proposer/l2_output_submitter.go`
 
 `FetchNextOutputInfo`函数通过调用`l2ooContract`合约来获取下一次该发送`proposal`的区块数，再将该区块块号和当前L2度区块块号进行比较，来判断是否应该发送`proposal`交易。如果需要发送，则调用`fetchOutput`函数来生成`output`
+
+> **Source Code**: [op-proposer/proposer/l2_output_submitter.go (v1.1.4)](https://github.com/ethereum-optimism/optimism/blob/v1.1.4/op-proposer/proposer/l2_output_submitter.go#L241)
 
 ```go
     func (l *L2OutputSubmitter) FetchNextOutputInfo(ctx context.Context) (*eth.OutputResponse, bool, error) {
@@ -147,6 +151,8 @@
 
 `OutputV0AtBlock`函数获取之前检索出来需要传递`proposal`的区块哈希来拿到区块头，再根据这个区块头派生`OutputV0`所需要的数据。其中通过`GetProof`函数获取的的`proof`中的`StorageHash（withdrawal_storage_root）`的作用是，如果只需要`L2ToL1MessagePasserAddr`相关的`state`的数据的话，`withdrawal_storage_root`可以大幅度减小整个默克尔树证明过程的大小。
 
+> **Source Code**: [op-node/sources/l2_client.go (v1.1.4)](https://github.com/ethereum-optimism/optimism/blob/v1.1.4/op-node/sources/l2_client.go#L170)
+
 ```go
     func (s *L2Client) OutputV0AtBlock(ctx context.Context, blockHash common.Hash) (*eth.OutputV0, error) {
         head, err := s.InfoByHash(ctx, blockHash)
@@ -183,6 +189,8 @@
 
 在`sendTransaction`函数中会间接调用`proposeL2OutputTxData`函数去使用`L1链上合约的ABI`来将我们的`output`与合约函数的`入参格式`进行匹配。随后`sendTransaction`函数将包装好的数据发送到L1上，与`L2OutputOracle合约`交互。
 
+> **Source Code**: [op-proposer/proposer/l2_output_submitter.go (v1.1.4)](https://github.com/ethereum-optimism/optimism/blob/v1.1.4/op-proposer/proposer/l2_output_submitter.go#L313)
+
 ```go
     func proposeL2OutputTxData(abi *abi.ABI, output *eth.OutputResponse) ([]byte, error) {
         return abi.Pack(
@@ -197,6 +205,8 @@
 `packages/contracts-bedrock/src/L1/L2OutputOracle.sol`
 
 `L2OutputOracle合约`通过将此来自`L2区块的state root`进行校验，并存入`合约的storage`当中。
+
+> **Source Code**: [packages/contracts-bedrock/src/L1/L2OutputOracle.sol (v1.1.4)](https://github.com/ethereum-optimism/optimism/blob/v1.1.4/packages/contracts-bedrock/src/L1/L2OutputOracle.sol#L178)
 
 ```solidity
     /// @notice Accepts an outputRoot and the timestamp of the corresponding L2 block.
