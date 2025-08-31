@@ -29,6 +29,8 @@ batcher通过对unsafe区块数据进行收集，来获取多个batch，在这�
 - 处理`receipts`，记录成功或者失败状态
 - 处理关闭请求
 
+> **Source Code**: [op-batcher/batcher/driver.go (v1.1.4)](https://github.com/ethereum-optimism/optimism/blob/v1.1.4/op-batcher/batcher/driver.go#L126)
+
 ```go
     func (l *BatchSubmitter) Start() error {
         l.log.Info("Starting Batch Submitter")
@@ -54,6 +56,8 @@ batcher通过对unsafe区块数据进行收集，来获取多个batch，在这�
         return nil
     }
 ```
+
+> **Source Code**: [op-batcher/batcher/driver.go (v1.1.4)](https://github.com/ethereum-optimism/optimism/blob/v1.1.4/op-batcher/batcher/driver.go#L286)
 
 ```go
     func (l *BatchSubmitter) loop() {
@@ -97,6 +101,8 @@ batcher通过对unsafe区块数据进行收集，来获取多个batch，在这�
 
 `loadBlocksIntoState`函数调用`calculateL2BlockRangeToStore`来获取自上次发送`batch transaction`而派生的最新`safeblock`后新生成的`unsafeblock`范围。然后循环将这个范围中的每一个`unsafe`块调用`loadBlockIntoState`函数从L2里获取并通过`AddL2Block`函数加载到内部的`block队列`里。等待进一步处理。
 
+> **Source Code**: [op-batcher/batcher/driver.go (v1.1.4)](https://github.com/ethereum-optimism/optimism/blob/v1.1.4/op-batcher/batcher/driver.go#L191)
+
 ```go
     func (l *BatchSubmitter) loadBlocksIntoState(ctx context.Context) error {
         start, end, err := l.calculateL2BlockRangeToStore(ctx)
@@ -120,6 +126,8 @@ batcher通过对unsafe区块数据进行收集，来获取多个batch，在这�
     }
 ```
 
+> **Source Code**: [op-batcher/batcher/driver.go (v1.1.4)](https://github.com/ethereum-optimism/optimism/blob/v1.1.4/op-batcher/batcher/driver.go#L227)
+
 ```go
     func (l *BatchSubmitter) loadBlockIntoState(ctx context.Context, blockNumber uint64) (*types.Block, error) {
         ……
@@ -136,6 +144,8 @@ batcher通过对unsafe区块数据进行收集，来获取多个batch，在这�
 `op-batcher/batcher/driver.go`
 
 `publishTxToL1`函数使用`TxData`函数对之前加载到数据进行处理，并调用`sendTransaction`函数发送到L1
+
+> **Source Code**: [op-batcher/batcher/driver.go (v1.1.4)](https://github.com/ethereum-optimism/optimism/blob/v1.1.4/op-batcher/batcher/driver.go#L356)
 
 ```go
     func (l *BatchSubmitter) publishTxToL1(ctx context.Context, queue *txmgr.Queue[txData], receiptsCh chan txmgr.TxReceipt[txData]) error {
@@ -173,6 +183,8 @@ batcher通过对unsafe区块数据进行收集，来获取多个batch，在这�
 
 
 `EnsureChannelWithSpace` 确保 `currentChannel` 填充有可容纳更多数据的空间的`channel`（即，`channel.IsFull` 返回 `false`）。 如果 `currentChannel` 为零或已满，则会创建一个新`channel`。
+
+> **Source Code**: [op-batcher/batcher/channel_manager.go (v1.1.4)](https://github.com/ethereum-optimism/optimism/blob/v1.1.4/op-batcher/batcher/channel_manager.go#L136)
 
 ```go
     func (s *channelManager) TxData(l1Head eth.BlockID) (txData, error) {
@@ -225,6 +237,8 @@ batcher通过对unsafe区块数据进行收集，来获取多个batch，在这�
 
 `processBlocks`函数在内部通过`AddBlock`把`block队列`里的`block`加入到当前的`channel`当中
 
+> **Source Code**: [op-batcher/batcher/channel_manager.go (v1.1.4)](https://github.com/ethereum-optimism/optimism/blob/v1.1.4/op-batcher/batcher/channel_manager.go#L215)
+
 ```go
     func (s *channelManager) processBlocks() error {
         var (
@@ -253,6 +267,8 @@ batcher通过对unsafe区块数据进行收集，来获取多个batch，在这�
 ```
 
 `AddBlock` 首先通过`BlockToBatch`把`batch`从`blcok`中获取出来，再通过`AddBatch`函数对数据进行压缩并存储。
+
+> **Source Code**: [op-batcher/batcher/channel_builder.go (v1.1.4)](https://github.com/ethereum-optimism/optimism/blob/v1.1.4/op-batcher/batcher/channel_builder.go#L192)
 
 ```go
     func (c *channelBuilder) AddBlock(block *types.Block) (derive.L1BlockInfo, error) {
